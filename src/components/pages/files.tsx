@@ -37,7 +37,9 @@ export function Files() {
           </TableRow>
         </TableHeader>
         <TableBody>
-          {files?.map((file) => <File key={file.id} file={file} />)}
+          {files?.map((file) => (
+            <File key={file.id} file={file} refetch={mutate} />
+          ))}
         </TableBody>
       </Table>
     </div>
