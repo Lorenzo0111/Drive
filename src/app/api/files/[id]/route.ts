@@ -8,10 +8,18 @@ export const GET = authenticated(async (req, { params }) => {
   if (!params?.id || typeof params.id !== "string")
     return error("Invalid file id", 400);
 
-  const file = await prisma.file.findUnique({
+  const file = await prisma.file.findFirst({
     where: {
-      id: params.id,
-      userId: req.auth.user.id,
+      OR: [
+        {
+          id: params.id,
+          userId: req.auth.user.id,
+        },
+        {
+          id: params.id,
+          public: true,
+        },
+      ],
     },
     select: {
       name: true,
@@ -57,10 +65,12 @@ export const DELETE = authenticated(async (req, { params }) => {
 
 const renameSchema = z
   .object({
-    name: z.string().min(1).max(255),
+    name: z.string().min(1).max(255).optional(),
+    public: z.boolean().optional(),
   })
   .transform((data) => ({
-    name: data.name.trim().replaceAll("/", "_").replaceAll(" ", "_"),
+    name: data.name?.trim().replaceAll("/", "_").replaceAll(" ", "_"),
+    public: data.public,
   }));
 export const PATCH = authenticated(async (req, { params }) => {
   if (!params?.id || typeof params.id !== "string")
@@ -75,6 +85,7 @@ export const PATCH = authenticated(async (req, { params }) => {
       },
       data: {
         name: data.name,
+        public: data.public,
       },
     });
 

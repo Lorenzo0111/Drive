@@ -34,6 +34,7 @@ export function Files() {
           <TableRow>
             <TableHead>Name</TableHead>
             <TableHead className="text-right">Size</TableHead>
+            <TableHead className="text-right">Visibility</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>

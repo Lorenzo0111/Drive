@@ -1,4 +1,5 @@
 import { Sidebar } from "@/components/sidebar";
+import { Toaster } from "@/components/ui/toaster";
 import { auth } from "@/lib/auth";
 import { cn } from "@/lib/utils";
 import type { Metadata } from "next";
@@ -32,6 +33,7 @@ export default async function RootLayout({
       >
         <Sidebar session={session} />
         {children}
+        <Toaster />
       </body>
     </html>
   );
