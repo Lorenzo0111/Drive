@@ -1,3 +1,5 @@
+import { Sidebar } from "@/components/sidebar";
+import { auth } from "@/lib/auth";
 import { cn } from "@/lib/utils";
 import type { Metadata } from "next";
 import { Inter as FontSans } from "next/font/google";
@@ -13,19 +15,22 @@ export const metadata: Metadata = {
   description: "Your drive app",
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const session = await auth();
+
   return (
     <html lang="en">
       <body
         className={cn(
-          "flex min-h-screen flex-col bg-background font-sans antialiased",
+          "flex min-h-screen bg-background font-sans antialiased",
           fontSans.variable,
         )}
       >
+        <Sidebar session={session} />
         {children}
       </body>
     </html>
