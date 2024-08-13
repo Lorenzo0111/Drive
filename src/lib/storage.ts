@@ -1,9 +1,12 @@
-import { readFile, unlink, writeFile } from "fs/promises";
+import { mkdir, readFile, unlink, writeFile } from "fs/promises";
 
 export const upload = async (file: File, userId: string) => {
-  const path = `uploads/${userId}/${file.name}`;
-  const buffer = Buffer.from(await file.arrayBuffer());
+  const array = await file.arrayBuffer();
 
+  const path = `uploads/${userId}/${file.name}`;
+  const buffer = Buffer.from(array);
+
+  await mkdir(`uploads/${userId}`, { recursive: true });
   await writeFile(path, buffer);
 
   return {
