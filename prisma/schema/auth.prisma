@@ -11,6 +11,8 @@ model User {
 
     sessions Session[]
     accounts Account[]
+
+    files File[]
 }
 
 model Account {
