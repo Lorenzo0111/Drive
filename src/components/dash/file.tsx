@@ -1,4 +1,3 @@
-import { File as FileType } from "@prisma/client";
 import axios from "axios";
 import Link from "next/link";
 import { RenameDialog } from "../dialogs/RenameDialog";
@@ -11,28 +10,53 @@ import {
 } from "../ui/context-menu";
 import { TableCell, TableRow } from "../ui/table";
 import { useToast } from "../ui/use-toast";
+import { FileIcon, FolderIcon } from "lucide-react";
 
 export function File({
-  file,
+  id,
+  name,
+  size,
+  public: isPublic,
+  folder,
   refetch,
+  setParent,
 }: {
-  file: FileType;
+  id: string;
+  name: string;
+  size: number;
+  public: boolean;
+  folder?: boolean;
   refetch: () => void;
+  setParent?: (id: string) => void;
 }) {
   const { toast } = useToast();
 
   return (
     <ContextMenu>
       <ContextMenuTrigger asChild>
-        <TableRow key={file.id}>
+        <TableRow key={id}>
+          <TableCell className="w-[20px]">
+            {folder ? <FolderIcon size={20} /> : <FileIcon size={20} />}
+          </TableCell>
           <TableCell>
-            <Link href={`/api/files/${file.id}`}>{file.name}</Link>
+            <Link
+              href={`/api/files/${id}`}
+              onClick={(e) => {
+                if (!folder) return;
+
+                e.preventDefault();
+
+                setParent?.(id);
+              }}
+            >
+              {name}
+            </Link>
           </TableCell>
           <TableCell className="text-right">
-            {Math.round(file.size / 1000)} KB
+            {Math.round(size / 1000)} KB
           </TableCell>
           <TableCell className="text-right">
-            {file.public ? "Public" : "Private"}
+            {isPublic ? "Public" : "Private"}
           </TableCell>
         </TableRow>
       </ContextMenuTrigger>
@@ -42,14 +66,12 @@ export function File({
           <Button
             onClick={() => {
               axios
-                .patch(`/api/files/${file.id}`, {
+                .patch(`/api/files/${id}`, {
                   public: true,
                 })
                 .then(() => refetch());
 
-              navigator.clipboard.writeText(
-                `${window.location.origin}/${file.id}`,
-              );
+              navigator.clipboard.writeText(`${window.location.origin}/${id}`);
 
               toast({
                 description: "Link copied to clipboard",
@@ -61,12 +83,12 @@ export function File({
             Share
           </Button>
         </ContextMenuItem>
-        {file.public && (
+        {isPublic && (
           <ContextMenuItem asChild>
             <Button
               onClick={() => {
                 axios
-                  .patch(`/api/files/${file.id}`, {
+                  .patch(`/api/files/${id}`, {
                     public: false,
                   })
                   .then(() => refetch());
@@ -79,12 +101,12 @@ export function File({
           </ContextMenuItem>
         )}
         <ContextMenuItem asChild>
-          <RenameDialog id={file.id} name={file.name} refetch={refetch} />
+          <RenameDialog id={id} name={name} refetch={refetch} />
         </ContextMenuItem>
         <ContextMenuItem asChild>
           <Button
             onClick={() => {
-              axios.delete(`/api/files/${file.id}`).then(() => refetch());
+              axios.delete(`/api/files/${id}`).then(() => refetch());
             }}
             className="w-full"
             variant="destructive"
