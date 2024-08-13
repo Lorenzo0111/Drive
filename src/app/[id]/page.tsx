@@ -1,6 +1,5 @@
 "use client";
 
-import { useFetcher } from "@/components/fetcher";
 import { ButtonLink } from "@/components/ui/button";
 import {
   Card,
@@ -9,6 +8,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { useFetcher } from "@/components/utils/fetcher";
 import type { File as FileType } from "@prisma/client";
 import { notFound } from "next/navigation";
 

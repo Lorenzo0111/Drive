@@ -1,8 +1,11 @@
 "use client";
 
 import type { File as FileType } from "@prisma/client";
+import axios from "axios";
+import { useRef, useState } from "react";
 import { File } from "../dash/file";
-import { useFetcher } from "../fetcher";
+import { NewFolderDialog } from "../dialogs/NewFolderDialog";
+import { Button } from "../ui/button";
 import {
   Table,
   TableBody,
@@ -10,10 +13,13 @@ import {
   TableHeader,
   TableRow,
 } from "../ui/table";
-import axios from "axios";
+import { useFetcher } from "../utils/fetcher";
+import { useQueryState } from "../utils/query-state";
 
 export function Files() {
+  const [parent, setParent] = useQueryState("parent");
   const { data: files, mutate } = useFetcher<FileType[]>("/api/files");
+  const input = useRef<HTMLInputElement>(null);
 
   return (
     <div
@@ -29,6 +35,13 @@ export function Files() {
       onDragOver={(e) => e.preventDefault()}
       className="h-screen w-full overflow-auto"
     >
+      <div className="flex w-full justify-between border-b p-4">
+        <NewFolderDialog refetch={mutate} parent={parent} />
+        <Button variant="secondary" onClick={() => input.current?.click()}>
+          Upload
+        </Button>
+      </div>
+
       <Table>
         <TableHeader>
           <TableRow>
@@ -43,6 +56,21 @@ export function Files() {
           ))}
         </TableBody>
       </Table>
+
+      <input
+        hidden
+        type="file"
+        ref={input}
+        onChange={() => {
+          if (input.current?.files) {
+            const file = input.current.files[0];
+            const formData = new FormData();
+            formData.append("file", file);
+
+            axios.postForm("/api/files", formData).then(() => mutate());
+          }
+        }}
+      />
     </div>
   );
 }

@@ -7,6 +7,12 @@ model File {
     createdAt DateTime @default(now())
 
     public Boolean @default(false)
+    folder Boolean @default(false)
+
+    parent   File?   @relation("Children", fields: [parentId], references: [id])
+    parentId String?
+
+    childrens File[] @relation("Children")
 
     user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
     userId String

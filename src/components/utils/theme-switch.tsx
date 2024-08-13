@@ -3,7 +3,7 @@
 import { cn } from "@/lib/utils";
 import { Laptop, Moon, Sun } from "lucide-react";
 import { useEffect, useState } from "react";
-import { Button } from "./ui/button";
+import { Button } from "../ui/button";
 
 export function ThemeSwitch({ className }: { className?: string }) {
   const [theme, setTheme] = useState(
