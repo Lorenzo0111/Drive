@@ -1,6 +1,7 @@
 import { Session } from "next-auth";
 import { type NextRequest, NextResponse } from "next/server";
 import { auth } from "./auth";
+import { z } from "zod";
 
 type NextAuthRequest = NextRequest & {
   auth: Session | null;
@@ -31,3 +32,15 @@ export const json = (data: any, status: number = 200) =>
 
 export const error = (message: string, status: number = 500) =>
   json({ error: message }, status);
+
+export const parseBody = async <T>(
+  req: NextRequest,
+  schema: z.ZodType<T>,
+): Promise<T> => {
+  const body = await req.json();
+  const data = schema.safeParse(body);
+
+  if (!data.success) throw new Error(`Invalid request: ${data.error.message}`);
+
+  return data.data;
+};
