@@ -6,6 +6,8 @@ model File {
     type      String
     createdAt DateTime @default(now())
 
+    public Boolean @default(false)
+
     user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
     userId String
 }

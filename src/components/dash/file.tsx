@@ -9,6 +9,7 @@ import {
 } from "../ui/context-menu";
 import { Button } from "../ui/button";
 import axios from "axios";
+import { RenameDialog } from "../dialogs/RenameDialog";
 
 export function File({
   file,
@@ -32,11 +33,12 @@ export function File({
 
       <ContextMenuContent>
         <ContextMenuItem asChild>
+          <RenameDialog id={file.id} name={file.name} refetch={refetch} />
+        </ContextMenuItem>
+        <ContextMenuItem asChild>
           <Button
             onClick={() => {
-              axios.delete(`/api/files/${file.id}`).then(() => {
-                refetch();
-              });
+              axios.delete(`/api/files/${file.id}`).then(() => refetch());
             }}
             className="w-full"
             variant="destructive"
