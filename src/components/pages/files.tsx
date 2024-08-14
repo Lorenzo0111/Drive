@@ -25,8 +25,10 @@ import { useFetcher } from "../utils/fetcher";
 import { useQueryState } from "../utils/query-state";
 
 export function Files() {
-  const [parent, setParent] = useQueryState("parent");
-  const { data: files, mutate } = useFetcher<FileType[]>("/api/files");
+  const [parent, setParent] = useQueryState("parent", "/");
+  const { data: files, mutate } = useFetcher<FileType[]>(
+    `/api/files?parent=${parent}`,
+  );
   const input = useRef<HTMLInputElement>(null);
 
   return (
@@ -50,26 +52,30 @@ export function Files() {
 
         <Breadcrumb>
           <BreadcrumbList>
-            {parent?.split("/").map((path, i) => (
-              <Fragment key={path}>
-                <BreadcrumbItem>
-                  <BreadcrumbLink
-                    onClick={() => {
-                      if (i === 0) {
-                        setParent(null);
-                      } else {
-                        setParent(parent?.split("/").slice(0, i).join("/"));
-                      }
-                    }}
-                  >
-                    {path || "/"}
-                  </BreadcrumbLink>
-                </BreadcrumbItem>
-                {i < (parent?.split("/").length || 0) - 1 && (
-                  <BreadcrumbSeparator />
-                )}
-              </Fragment>
-            ))}
+            {(!parent || parent === "/" ? [""] : parent.split("/")).map(
+              (path, i) => (
+                <Fragment key={path}>
+                  <BreadcrumbItem>
+                    <BreadcrumbLink
+                      onClick={() => {
+                        if (i === 0) {
+                          setParent(null);
+                        } else {
+                          setParent(
+                            parent?.split("/").slice(0, i).join("/") || "/",
+                          );
+                        }
+                      }}
+                    >
+                      {path || "/"}
+                    </BreadcrumbLink>
+                  </BreadcrumbItem>
+                  {i < (parent?.split("/").length || 0) - 1 && (
+                    <BreadcrumbSeparator />
+                  )}
+                </Fragment>
+              ),
+            )}
           </BreadcrumbList>
         </Breadcrumb>
 
@@ -88,7 +94,7 @@ export function Files() {
           </TableRow>
         </TableHeader>
         <TableBody>
-          {parent && (
+          {parent && parent !== "/" && (
             <File
               id={
                 parent === "null"
@@ -112,6 +118,11 @@ export function Files() {
               public={file.public}
               folder={file.folder}
               refetch={mutate}
+              setParent={(id) =>
+                setParent(
+                  `${!parent || parent === "/" ? "" : parent}/${file.name}`,
+                )
+              }
             />
           ))}
         </TableBody>

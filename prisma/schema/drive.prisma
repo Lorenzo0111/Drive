@@ -9,7 +9,7 @@ model File {
     public Boolean @default(false)
     folder Boolean @default(false)
 
-    parent   File?   @relation("Children", fields: [parentId], references: [id])
+    parent   File?   @relation("Children", fields: [parentId], references: [id], onDelete: Cascade)
     parentId String?
 
     childrens File[] @relation("Children")
