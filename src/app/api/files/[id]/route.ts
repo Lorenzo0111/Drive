@@ -156,21 +156,23 @@ export const DELETE = authenticated(async (req, { params }) => {
   return json({ message: "File deleted" });
 });
 
-const renameSchema = z
+const updateSchema = z
   .object({
     name: z.string().min(1).max(255).optional(),
     public: z.boolean().optional(),
+    parent: z.string().optional().nullable(),
   })
   .transform((data) => ({
     name: data.name?.trim().replaceAll("/", "_").replaceAll(" ", "_"),
     public: data.public,
+    parent: data.parent,
   }));
 export const PATCH = authenticated(async (req, { params }) => {
   if (!params?.id || typeof params.id !== "string")
     return error("Invalid file id", 400);
 
   try {
-    const data = await parseBody(req, renameSchema);
+    const data = await parseBody(req, updateSchema);
     const oldFile = await prisma.file.findUnique({
       where: {
         id: params.id,
@@ -195,6 +197,17 @@ export const PATCH = authenticated(async (req, { params }) => {
                 oldFile.path.split("/").slice(-1)[0],
                 data.name,
               )
+            : undefined,
+        parent:
+          data.parent !== undefined
+            ? data.parent === null
+              ? { disconnect: true }
+              : {
+                  connect: {
+                    id: data.parent,
+                    userId: req.auth.user.id,
+                  },
+                }
             : undefined,
       },
       select: { folder: true, path: true },

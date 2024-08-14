@@ -1,9 +1,10 @@
 "use client";
 
+import { DndContext } from "@dnd-kit/core";
 import type { File as FileType } from "@prisma/client";
 import axios from "axios";
 import { Fragment, useRef } from "react";
-import { File } from "../dash/file";
+import { FileFolderContainer } from "../dash/file";
 import { NewFolderDialog } from "../dialogs/NewFolderDialog";
 import {
   Breadcrumb,
@@ -83,59 +84,71 @@ export function Files() {
           Upload
         </Button>
       </div>
+      <DndContext
+        onDragEnd={(e) => {
+          if (!e.active || !e.over) return;
 
-      <Table>
-        <TableHeader>
-          <TableRow>
-            <TableHead className="w-[20px]">#</TableHead>
-            <TableHead>Name</TableHead>
-            <TableHead className="text-right">Size</TableHead>
-            <TableHead className="text-right">Visibility</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {parent && parent !== "/" && (
-            <File
-              id={
-                parent === "null"
-                  ? ".."
-                  : parent.split("/").slice(0, -1).join("/")
-              }
-              name=".."
-              size={0}
-              public={false}
-              folder
-              refetch={mutate}
-              setParent={
-                parent === null
-                  ? undefined
-                  : () =>
-                      setParent(
-                        parent === "null"
-                          ? "/"
-                          : parent.split("/").slice(0, -1).join("/"),
-                      )
-              }
-            />
-          )}
-          {files?.map((file) => (
-            <File
-              key={file.id}
-              id={file.id}
-              name={file.name}
-              size={file.size}
-              public={file.public}
-              folder={file.folder}
-              refetch={mutate}
-              setParent={() =>
-                setParent(
-                  `${!parent || parent === "/" ? "" : parent}/${file.name}`,
-                )
-              }
-            />
-          ))}
-        </TableBody>
-      </Table>
+          const active = e.active.id;
+          const over = e.over.id;
+
+          axios
+            .patch(`/api/files/${active}`, { parent: over || null })
+            .then(() => {
+              mutate();
+            });
+        }}
+      >
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead className="w-[20px]">#</TableHead>
+              <TableHead>Name</TableHead>
+              <TableHead className="text-right">Size</TableHead>
+              <TableHead className="text-right">Visibility</TableHead>
+            </TableRow>
+          </TableHeader>
+
+          <TableBody>
+            {parent && parent !== "/" && (
+              <FileFolderContainer
+                id={
+                  parent === null || parent === "/"
+                    ? "/"
+                    : parent.split("/").slice(0, -1).join("/")
+                }
+                name=".."
+                size={0}
+                public={false}
+                folder
+                refetch={mutate}
+                setParent={() =>
+                  setParent(
+                    parent === null || parent === "/"
+                      ? "/"
+                      : parent.split("/").slice(0, -1).join("/"),
+                  )
+                }
+              />
+            )}
+            {files?.map((file) => (
+              <FileFolderContainer
+                key={file.id}
+                id={file.id}
+                name={file.name}
+                size={file.size}
+                public={file.public}
+                folder={file.folder}
+                refetch={mutate}
+                setParent={() =>
+                  setParent(
+                    `${!parent || parent === "/" ? "" : parent}/${file.name}`,
+                  )
+                }
+              />
+            ))}
+          </TableBody>
+        </Table>
+      </DndContext>
 
       <input
         hidden

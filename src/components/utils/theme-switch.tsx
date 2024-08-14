@@ -36,6 +36,7 @@ export function ThemeSwitch({ className }: { className?: string }) {
 
   return (
     <Button
+      suppressHydrationWarning
       variant={"outline"}
       className={cn("p-2", className)}
       onClick={toggleTheme}

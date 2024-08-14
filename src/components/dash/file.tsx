@@ -1,4 +1,7 @@
+import { DraggableAttributes, useDraggable, useDroppable } from "@dnd-kit/core";
+import { SyntheticListenerMap } from "@dnd-kit/core/dist/hooks/utilities";
 import axios from "axios";
+import { FileIcon, FolderIcon } from "lucide-react";
 import Link from "next/link";
 import { RenameDialog } from "../dialogs/RenameDialog";
 import { Button } from "../ui/button";
@@ -10,7 +13,19 @@ import {
 } from "../ui/context-menu";
 import { TableCell, TableRow } from "../ui/table";
 import { useToast } from "../ui/use-toast";
-import { FileIcon, FolderIcon } from "lucide-react";
+
+export type FileProps = {
+  id: string;
+  name: string;
+  size: number;
+  public: boolean;
+  folder?: boolean;
+  refetch: () => void;
+  setParent?: () => void;
+
+  isOver?: boolean;
+  setNodeRef?: (node: HTMLElement | null) => void;
+};
 
 export function File({
   id,
@@ -20,21 +35,22 @@ export function File({
   folder,
   refetch,
   setParent,
-}: {
-  id: string;
-  name: string;
-  size: number;
-  public: boolean;
-  folder?: boolean;
-  refetch: () => void;
-  setParent?: () => void;
-}) {
+  isOver,
+  setNodeRef,
+  ...rest
+}:
+  | FileProps
+  | (FileProps &
+      DraggableAttributes &
+      SyntheticListenerMap & {
+        style: React.CSSProperties;
+      })) {
   const { toast } = useToast();
 
   return (
     <ContextMenu>
       <ContextMenuTrigger asChild>
-        <TableRow key={id}>
+        <TableRow key={id} ref={setNodeRef} {...rest}>
           <TableCell className="w-[20px]">
             {folder ? <FolderIcon size={20} /> : <FileIcon size={20} />}
           </TableCell>
@@ -45,9 +61,9 @@ export function File({
                 if (!folder) return;
 
                 e.preventDefault();
-
                 setParent?.();
               }}
+              download
             >
               {name}
             </Link>
@@ -116,5 +132,39 @@ export function File({
         </ContextMenuItem>
       </ContextMenuContent>
     </ContextMenu>
+  );
+}
+
+export function FileFolderContainer(props: FileProps) {
+  if (props.folder) return <FolderContainer {...props} />;
+  return <FileContainer {...props} />;
+}
+
+export function FolderContainer(props: FileProps) {
+  const { isOver, setNodeRef } = useDroppable({
+    id: props.id,
+  });
+
+  return <File {...props} setNodeRef={setNodeRef} isOver={isOver} />;
+}
+
+export function FileContainer(props: FileProps) {
+  const { attributes, listeners, setNodeRef, transform } = useDraggable({
+    id: props.id,
+  });
+  const style = transform
+    ? {
+        transform: `translate3d(${transform.x}px, ${transform.y}px, 0)`,
+      }
+    : undefined;
+
+  return (
+    <File
+      {...props}
+      setNodeRef={setNodeRef}
+      style={style}
+      {...listeners}
+      {...attributes}
+    />
   );
 }

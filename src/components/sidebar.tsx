@@ -37,7 +37,10 @@ export function Sidebar({ session }: { session: Session | null }) {
   if (!session?.user) return null;
 
   return (
-    <nav className="flex h-screen w-20 flex-col items-center gap-3 border-r py-4">
+    <nav
+      suppressHydrationWarning
+      className="flex h-screen w-20 flex-col items-center gap-3 border-r py-4"
+    >
       <SidebarLink href="/" icon={<Home size={24} />} />
 
       <ThemeSwitch className="mt-auto" />
