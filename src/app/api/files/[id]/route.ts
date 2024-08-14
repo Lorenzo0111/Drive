@@ -1,8 +1,47 @@
 import { authenticated, error, json, parseBody } from "@/lib/backend";
 import { prisma } from "@/lib/prisma";
-import { download, remove } from "@/lib/storage";
+import { download, downloadFolder, remove } from "@/lib/storage";
 import { NextResponse } from "next/server";
 import { z } from "zod";
+
+async function prepareFolder(id: string) {
+  const filePaths: {
+    name: string;
+    path: string;
+  }[] = [];
+
+  const folder = await prisma.file.findUnique({
+    where: {
+      id,
+    },
+    include: {
+      childrens: {
+        omit: {
+          path: false,
+        },
+      },
+    },
+    omit: {
+      path: false,
+    },
+  });
+
+  if (!folder) return [];
+
+  for (const file of folder.childrens) {
+    if (file.folder) {
+      const files = await prepareFolder(file.id);
+      filePaths.push(...files);
+    }
+
+    filePaths.push({
+      name: `${folder.path}/${file.name}`,
+      path: file.path,
+    });
+  }
+
+  return filePaths;
+}
 
 export const GET = authenticated(async (req, { params }) => {
   if (!params?.id || typeof params.id !== "string")
@@ -26,10 +65,41 @@ export const GET = authenticated(async (req, { params }) => {
       path: true,
       type: true,
       size: true,
+      folder: true,
     },
   });
 
   if (!file) return error("File not found", 404);
+
+  if (file.folder) {
+    const files = await prepareFolder(params.id);
+    const archive = await downloadFolder(files);
+
+    const buffer = await new Promise<Buffer>((resolve, reject) => {
+      const chunks: Buffer[] = [];
+
+      archive.on("data", (chunk) => {
+        chunks.push(chunk);
+      });
+
+      archive.on("end", () => {
+        resolve(Buffer.concat(chunks));
+      });
+
+      archive.on("error", (e) => {
+        reject(e);
+      });
+    });
+
+    return new NextResponse(buffer, {
+      headers: {
+        "Content-Type": "application/zip",
+        "Content-Length": buffer.length.toString(),
+        "Content-Disposition": `attachment; filename="${file.name}.zip"`,
+        "Cache-Control": "public, max-age=31536000, immutable",
+      },
+    });
+  }
 
   const buffer = await download(file.path);
   return new NextResponse(buffer, {
