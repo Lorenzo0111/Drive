@@ -10,7 +10,6 @@ import {
   BreadcrumbItem,
   BreadcrumbLink,
   BreadcrumbList,
-  BreadcrumbPage,
   BreadcrumbSeparator,
 } from "../ui/breadcrumb";
 import { Button } from "../ui/button";
@@ -41,6 +40,7 @@ export function Files() {
 
         const formData = new FormData();
         formData.append("file", file);
+        formData.append("parent", parent || "/");
 
         axios.postForm("/api/files", formData).then(() => mutate());
       }}
@@ -106,7 +106,16 @@ export function Files() {
               public={false}
               folder
               refetch={mutate}
-              setParent={parent === null ? undefined : (id) => setParent(id)}
+              setParent={
+                parent === null
+                  ? undefined
+                  : () =>
+                      setParent(
+                        parent === "null"
+                          ? "/"
+                          : parent.split("/").slice(0, -1).join("/"),
+                      )
+              }
             />
           )}
           {files?.map((file) => (
@@ -118,7 +127,7 @@ export function Files() {
               public={file.public}
               folder={file.folder}
               refetch={mutate}
-              setParent={(id) =>
+              setParent={() =>
                 setParent(
                   `${!parent || parent === "/" ? "" : parent}/${file.name}`,
                 )
@@ -137,6 +146,7 @@ export function Files() {
             const file = input.current.files[0];
             const formData = new FormData();
             formData.append("file", file);
+            formData.append("parent", parent || "/");
 
             axios.postForm("/api/files", formData).then(() => mutate());
           }

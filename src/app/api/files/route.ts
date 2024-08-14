@@ -4,9 +4,19 @@ import { upload } from "@/lib/storage";
 import { z } from "zod";
 
 export const GET = authenticated(async (req) => {
+  const parent = req.nextUrl.searchParams.get("parent") || "/";
+  const parentFile = await prisma.file.findFirst({
+    where: {
+      path: parent,
+      userId: req.auth.user.id,
+      folder: true,
+    },
+  });
+
   const files = await prisma.file.findMany({
     where: {
       userId: req.auth.user.id,
+      parentId: parentFile?.id || null,
     },
   });
 
@@ -19,6 +29,26 @@ export const POST = authenticated(async (req) => {
 
   if (!file || !(file instanceof File)) return error("No file provided", 400);
 
+  const parent = data.get("parent") as string | null;
+  let parentId;
+
+  if (parent && parent !== "/") {
+    const parentFile = await prisma.file.findFirst({
+      where: {
+        path: parent,
+        userId: req.auth.user.id,
+        folder: true,
+      },
+      select: {
+        id: true,
+      },
+    });
+
+    if (!parentFile) return error("Invalid parent", 400);
+
+    parentId = parentFile.id;
+  }
+
   const res = await upload(file, req.auth.user.id);
   const record = await prisma.file.create({
     data: {
@@ -27,6 +57,7 @@ export const POST = authenticated(async (req) => {
       type: res.type,
       path: res.path,
       userId: req.auth.user.id,
+      parentId,
     },
   });
 
@@ -45,20 +76,23 @@ const createFolderSchema = z
 export const PUT = authenticated(async (req) => {
   try {
     const data = await parseBody(req, createFolderSchema);
+    let parentId;
 
     if (data.parent && data.parent !== "/") {
       const parent = await prisma.file.findFirst({
         where: {
           path: data.parent,
           userId: req.auth.user.id,
+          folder: true,
         },
         select: {
           id: true,
-          folder: true,
         },
       });
 
-      if (!parent || !parent.folder) return error("Invalid parent", 400);
+      if (!parent) return error("Invalid parent", 400);
+
+      parentId = parent.id;
     }
 
     const file = await prisma.file.create({
@@ -68,7 +102,7 @@ export const PUT = authenticated(async (req) => {
         type: "folder",
         folder: true,
         userId: req.auth.user.id,
-        parentId: data.parent,
+        parentId,
         path:
           data.parent && data.parent !== "/"
             ? `${data.parent}/${data.name}`
@@ -78,7 +112,6 @@ export const PUT = authenticated(async (req) => {
 
     return json(file);
   } catch (e) {
-    console.log(e)
     return error("Invalid body", 400);
   }
 });

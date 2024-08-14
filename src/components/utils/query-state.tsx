@@ -14,6 +14,7 @@ export function useQueryState(key: string, defaultValue: string | null = null) {
   useEffect(() => {
     const params = new URLSearchParams(searchParams.toString());
     params.set(key, value || "");
+    if (!value) params.delete(key);
 
     router.push(path + "?" + params.toString());
   }, [key, path, router, searchParams, value]);

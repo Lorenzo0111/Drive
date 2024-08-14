@@ -27,7 +27,7 @@ export function File({
   public: boolean;
   folder?: boolean;
   refetch: () => void;
-  setParent?: (id: string) => void;
+  setParent?: () => void;
 }) {
   const { toast } = useToast();
 
@@ -46,7 +46,7 @@ export function File({
 
                 e.preventDefault();
 
-                setParent?.(id);
+                setParent?.();
               }}
             >
               {name}

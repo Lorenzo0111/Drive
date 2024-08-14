@@ -42,6 +42,27 @@ export const GET = authenticated(async (req, { params }) => {
   });
 });
 
+async function deleteFolder(id: string) {
+  const folder = await prisma.file.findFirst({
+    where: {
+      id,
+    },
+    select: {
+      path: true,
+    },
+  });
+
+  if (!folder) return;
+
+  await prisma.file.deleteMany({
+    where: {
+      path: {
+        startsWith: folder.path,
+      },
+    },
+  });
+}
+
 export const DELETE = authenticated(async (req, { params }) => {
   if (!params?.id || typeof params.id !== "string")
     return error("Invalid file id", 400);
@@ -52,13 +73,15 @@ export const DELETE = authenticated(async (req, { params }) => {
       userId: req.auth.user.id,
     },
     select: {
+      folder: true,
       path: true,
     },
   });
 
   if (!file) return error("File not found", 404);
 
-  await remove(file.path);
+  if (!file.folder) await remove(file.path);
+  else await deleteFolder(params.id);
 
   return json({ message: "File deleted" });
 });
@@ -78,7 +101,17 @@ export const PATCH = authenticated(async (req, { params }) => {
 
   try {
     const data = await parseBody(req, renameSchema);
-    const file = await prisma.file.update({
+    const oldFile = await prisma.file.findUnique({
+      where: {
+        id: params.id,
+        userId: req.auth.user.id,
+      },
+      select: { folder: true, path: true },
+    });
+
+    if (!oldFile) return error("File not found", 404);
+
+    const newFile = await prisma.file.update({
       where: {
         id: params.id,
         userId: req.auth.user.id,
@@ -86,10 +119,45 @@ export const PATCH = authenticated(async (req, { params }) => {
       data: {
         name: data.name,
         public: data.public,
+        path:
+          data.name && oldFile.folder
+            ? oldFile.path.replace(
+                oldFile.path.split("/").slice(-1)[0],
+                data.name,
+              )
+            : undefined,
       },
+      select: { folder: true, path: true },
     });
 
-    return json(file);
+    if (oldFile.folder) {
+      const allFiles = await prisma.file.findMany({
+        where: {
+          path: {
+            startsWith: oldFile.path,
+          },
+        },
+        select: {
+          id: true,
+          path: true,
+        },
+      });
+
+      const transactions = allFiles.map((f) => {
+        return prisma.file.update({
+          where: {
+            id: f.id,
+          },
+          data: {
+            path: f.path.replace(oldFile.path, newFile.path),
+          },
+        });
+      });
+
+      await prisma.$transaction(transactions);
+    }
+
+    return json(newFile);
   } catch (e) {
     return error("Invalid body", 400);
   }
