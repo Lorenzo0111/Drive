@@ -12,7 +12,7 @@
 
 Drive is a simple and elegant file storage solution to manage your files from an elegant dashboard.
 
-<img src="https://github.com/Lorenzo0111/Drive/blob/main/media/Dashboard.png?raw=true" height="400" />
+> 👀 [Click for a showcase video](https://youtu.be/nU0aAP0bccA)
 
 ## Deploying
 
