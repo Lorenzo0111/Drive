@@ -2,10 +2,10 @@
 
 import { cn } from "@/lib/utils";
 import { Home, LogOut } from "lucide-react";
-import { Session } from "next-auth";
 import { usePathname } from "next/navigation";
 import { ThemeSwitch } from "./utils/theme-switch";
 import { ButtonLink } from "./ui/button";
+import type { Session } from "better-auth/types";
 
 export function SidebarLink({
   href,
@@ -34,7 +34,7 @@ export function SidebarLink({
 }
 
 export function Sidebar({ session }: { session: Session | null }) {
-  if (!session?.user) return null;
+  if (!session) return null;
 
   return (
     <nav

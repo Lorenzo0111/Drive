@@ -16,4 +16,6 @@ model File {
 
     user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
     userId String
+
+    @@map("file")
 }

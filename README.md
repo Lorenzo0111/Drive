@@ -22,12 +22,13 @@ You'll have to set the following environment variables to setup the dashboard, h
 
 ### Dashboard Environment Variables
 
-| Key                | Description               | Example               |
-| ------------------ | ------------------------- | --------------------- |
-| DATABASE_URL       | The SQLite URL            | file:/tmp/database.db |
-| AUTH_SECRET        | The auth secret           |                       |
-| AUTH_GITHUB_ID     | Your github client id     |                       |
-| AUTH_GITHUB_SECRET | Your github client secret |                       |
+| Key                       | Description               | Example               |
+| ------------------------- | ------------------------- | --------------------- |
+| STORAGE_PATH              | The destination path      | uploads               |
+| DATABASE_URL              | The SQLite URL            | file:/tmp/database.db |
+| BETTER_AUTH_SECRET        | The auth secret           |                       |
+| BETTER_AUTH_GITHUB_ID     | Your github client id     |                       |
+| BETTER_AUTH_GITHUB_SECRET | Your github client secret |                       |
 
 ### Selfhosting
 

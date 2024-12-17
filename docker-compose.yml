@@ -1,0 +1,19 @@
+services:
+  app:
+    container_name: drive
+    image: ghcr.io/lorenzo0111/drive:latest
+    restart: always
+    ports:
+      - "${PROXY_PORT:-3000}:3000"
+    environment:
+      - STORAGE_PATH="/data"
+      - DATABASE_URL="/data/database.db"
+      - BETTER_AUTH_SECRET="${BETTER_AUTH_SECRET}"
+      - BETTER_AUTH_URL="${BETTER_AUTH_URL}"
+      - BETTER_AUTH_GITHUB_ID="${BETTER_AUTH_GITHUB_ID}"
+      - BETTER_AUTH_GITHUB_SECRET="${BETTER_AUTH_GITHUB_SECRET}"
+    volumes:
+      - drive:/data
+
+volumes:
+  drive:

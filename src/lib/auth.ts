@@ -1,30 +1,17 @@
-import { PrismaAdapter } from "@auth/prisma-adapter";
-import NextAuth, { DefaultSession } from "next-auth";
-import GitHub from "next-auth/providers/github";
 import { prisma } from "./prisma";
+import { betterAuth } from "better-auth";
+import { prismaAdapter } from "better-auth/adapters/prisma";
+import { nextCookies } from "better-auth/next-js";
 
-declare module "next-auth" {
-  interface Session {
-    user: {
-      id: string;
-    } & DefaultSession["user"];
-  }
-}
-
-export const { handlers, auth, signIn, signOut } = NextAuth({
-  adapter: PrismaAdapter(prisma as any),
-  providers: [GitHub],
-  session: { strategy: "jwt" },
-  callbacks: {
-    async jwt({ token, user }) {
-      if (user) {
-        token.id = user.id;
-      }
-      return token;
-    },
-    async session({ session, token }) {
-      session.user.id = token.id as string;
-      return session;
+export const auth = betterAuth({
+  database: prismaAdapter(prisma, {
+    provider: "sqlite",
+  }),
+  socialProviders: {
+    github: {
+      clientId: process.env.BETTER_AUTH_GITHUB_ID as string,
+      clientSecret: process.env.BETTER_AUTH_GITHUB_SECRET as string,
     },
   },
+  plugins: [nextCookies()],
 });

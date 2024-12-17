@@ -4,6 +4,7 @@ import { auth } from "@/lib/auth";
 import { cn } from "@/lib/utils";
 import type { Metadata } from "next";
 import { Inter as FontSans } from "next/font/google";
+import { headers } from "next/headers";
 import "./globals.css";
 
 const fontSans = FontSans({
@@ -21,7 +22,9 @@ export default async function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  const session = await auth();
+  const session = await auth.api.getSession({
+    headers: await headers(),
+  });
 
   return (
     <html lang="en">
@@ -31,7 +34,7 @@ export default async function RootLayout({
           fontSans.variable,
         )}
       >
-        <Sidebar session={session} />
+        <Sidebar session={session?.session ?? null} />
         {children}
         <Toaster />
       </body>

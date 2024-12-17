@@ -11,8 +11,10 @@ import {
 import { useFetcher } from "@/components/utils/fetcher";
 import type { File as FileType } from "@prisma/client";
 import { notFound } from "next/navigation";
+import { use } from "react";
 
-export default function FilePage({ params }: { params: { id: string } }) {
+export default function FilePage(props: { params: Promise<{ id: string }> }) {
+  const params = use(props.params);
   const { data: file, isLoading } = useFetcher<FileType>(
     `/api/files/${params.id}/info`,
   );

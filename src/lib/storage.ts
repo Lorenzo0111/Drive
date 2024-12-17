@@ -4,11 +4,11 @@ import archiver from "archiver";
 export const upload = async (file: File, userId: string) => {
   const array = await file.arrayBuffer();
 
-  const path = `uploads/${userId}/${Date.now()}.${file.name}`;
+  const path = `${process.env.STORAGE_PATH}/${userId}/${Date.now()}.${file.name}`;
   const buffer = Buffer.from(array);
 
-  await mkdir(`uploads/${userId}`, { recursive: true });
-  await writeFile(path, buffer);
+  await mkdir(`${process.env.STORAGE_PATH}/${userId}`, { recursive: true });
+  await writeFile(path, new Uint8Array(buffer));
 
   return {
     name: file.name,

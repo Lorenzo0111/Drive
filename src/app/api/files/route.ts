@@ -1,29 +1,44 @@
-import { authenticated, error, json, parseBody } from "@/lib/backend";
+import { auth } from "@/lib/auth";
+import { error, json, parseBody } from "@/lib/backend";
 import { prisma } from "@/lib/prisma";
 import { upload } from "@/lib/storage";
+import { headers } from "next/headers";
+import { NextRequest } from "next/server";
 import { z } from "zod";
 
-export const GET = authenticated(async (req) => {
+export const GET = async (req: NextRequest) => {
+  const session = await auth.api.getSession({
+    headers: await headers(),
+  });
+
+  if (!session) return error("Unauthorized", 401);
+
   const parent = req.nextUrl.searchParams.get("parent") || "/";
   const parentFile = await prisma.file.findFirst({
     where: {
       path: parent,
-      userId: req.auth.user.id,
+      userId: session.user.id,
       folder: true,
     },
   });
 
   const files = await prisma.file.findMany({
     where: {
-      userId: req.auth.user.id,
+      userId: session.user.id,
       parentId: parentFile?.id || null,
     },
   });
 
   return json(files);
-});
+};
 
-export const POST = authenticated(async (req) => {
+export const POST = async (req: NextRequest) => {
+  const session = await auth.api.getSession({
+    headers: await headers(),
+  });
+
+  if (!session) return error("Unauthorized", 401);
+
   const data = await req.formData();
   const file = data.get("file");
 
@@ -36,7 +51,7 @@ export const POST = authenticated(async (req) => {
     const parentFile = await prisma.file.findFirst({
       where: {
         path: parent,
-        userId: req.auth.user.id,
+        userId: session.user.id,
         folder: true,
       },
       select: {
@@ -49,20 +64,20 @@ export const POST = authenticated(async (req) => {
     parentId = parentFile.id;
   }
 
-  const res = await upload(file, req.auth.user.id);
+  const res = await upload(file, session.user.id);
   const record = await prisma.file.create({
     data: {
       name: res.name,
       size: res.size,
       type: res.type,
       path: res.path,
-      userId: req.auth.user.id,
+      userId: session.user.id,
       parentId,
     },
   });
 
   return json(record, 201);
-});
+};
 
 const createFolderSchema = z
   .object({
@@ -73,7 +88,13 @@ const createFolderSchema = z
     name: data.name.trim().replaceAll("/", "_").replaceAll(" ", "_"),
     parent: data.parent && data.parent !== "/" ? data.parent : undefined,
   }));
-export const PUT = authenticated(async (req) => {
+export const PUT = async (req: NextRequest) => {
+  const session = await auth.api.getSession({
+    headers: await headers(),
+  });
+
+  if (!session) return error("Unauthorized", 401);
+
   try {
     const data = await parseBody(req, createFolderSchema);
     let parentId;
@@ -82,7 +103,7 @@ export const PUT = authenticated(async (req) => {
       const parent = await prisma.file.findFirst({
         where: {
           path: data.parent,
-          userId: req.auth.user.id,
+          userId: session.user.id,
           folder: true,
         },
         select: {
@@ -101,7 +122,7 @@ export const PUT = authenticated(async (req) => {
         size: 0,
         type: "folder",
         folder: true,
-        userId: req.auth.user.id,
+        userId: session.user.id,
         parentId,
         path:
           data.parent && data.parent !== "/"
@@ -114,4 +135,4 @@ export const PUT = authenticated(async (req) => {
   } catch (e) {
     return error("Invalid body", 400);
   }
-});
+};

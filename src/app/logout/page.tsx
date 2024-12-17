@@ -1,3 +1,5 @@
+"use client";
+
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -6,7 +8,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { signOut } from "@/lib/auth";
+import { authClient } from "@/lib/auth.client";
 import { redirect } from "next/navigation";
 
 export default function Logout() {
@@ -19,10 +21,10 @@ export default function Logout() {
         </CardHeader>
         <CardContent>
           <form
-            action={async () => {
-              "use server";
+            onSubmit={async (e) => {
+              e.preventDefault();
 
-              await signOut();
+              await authClient.signOut();
               return redirect("/");
             }}
           >

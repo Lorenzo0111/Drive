@@ -1,16 +1,26 @@
-import { authenticated, error, json } from "@/lib/backend";
+import { auth } from "@/lib/auth";
+import { error, json } from "@/lib/backend";
 import { prisma } from "@/lib/prisma";
+import { headers } from "next/headers";
+import { NextRequest } from "next/server";
 
-export const GET = authenticated(async (req, { params }) => {
-  if (!params?.id || typeof params.id !== "string")
-    return error("Invalid file id", 400);
+export const GET = async (
+  _req: NextRequest,
+  context: { params: Promise<{ id: string }> },
+) => {
+  const params = await context.params;
+  const session = await auth.api.getSession({
+    headers: await headers(),
+  });
+
+  if (!session) return error("Unauthorized", 401);
 
   const file = await prisma.file.findFirst({
     where: {
       OR: [
         {
           id: params.id,
-          userId: req.auth.user.id,
+          userId: session.user.id,
         },
         {
           id: params.id,
@@ -29,4 +39,4 @@ export const GET = authenticated(async (req, { params }) => {
   if (!file) return error("File not found", 404);
 
   return json(file);
-});
+};

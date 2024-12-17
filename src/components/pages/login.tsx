@@ -1,4 +1,6 @@
-import { signIn } from "@/lib/auth";
+"use client";
+
+import { authClient } from "@/lib/auth.client";
 import { Button } from "../ui/button";
 import {
   Card,
@@ -20,10 +22,14 @@ export function Login() {
         </CardHeader>
         <CardContent>
           <form
-            action={async () => {
-              "use server";
+            onSubmit={async (e) => {
+              e.preventDefault();
 
-              await signIn("github");
+              const data = await authClient.signIn.social({
+                provider: "github",
+              });
+
+              console.log(data);
             }}
           >
             <Button className="w-full">Login</Button>

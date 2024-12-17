@@ -1,7 +1,9 @@
-import { authenticated, error, json, parseBody } from "@/lib/backend";
+import { auth } from "@/lib/auth";
+import { error, json, parseBody } from "@/lib/backend";
 import { prisma } from "@/lib/prisma";
 import { download, downloadFolder, remove } from "@/lib/storage";
-import { NextResponse } from "next/server";
+import { headers } from "next/headers";
+import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 
 async function prepareFolder(id: string) {
@@ -43,16 +45,23 @@ async function prepareFolder(id: string) {
   return filePaths;
 }
 
-export const GET = authenticated(async (req, { params }) => {
-  if (!params?.id || typeof params.id !== "string")
-    return error("Invalid file id", 400);
+export const GET = async (
+  _req: NextRequest,
+  context: { params: Promise<{ id: string }> },
+) => {
+  const params = await context.params;
+  const session = await auth.api.getSession({
+    headers: await headers(),
+  });
+
+  if (!session) return error("Unauthorized", 401);
 
   const file = await prisma.file.findFirst({
     where: {
       OR: [
         {
           id: params.id,
-          userId: req.auth.user.id,
+          userId: session.user.id,
         },
         {
           id: params.id,
@@ -83,7 +92,7 @@ export const GET = authenticated(async (req, { params }) => {
       });
 
       archive.on("end", () => {
-        resolve(Buffer.concat(chunks));
+        resolve(Buffer.concat(chunks as Uint8Array[]));
       });
 
       archive.on("error", (e) => {
@@ -110,7 +119,7 @@ export const GET = authenticated(async (req, { params }) => {
       "Cache-Control": "public, max-age=31536000, immutable",
     },
   });
-});
+};
 
 async function deleteFolder(id: string) {
   const folder = await prisma.file.findFirst({
@@ -133,14 +142,21 @@ async function deleteFolder(id: string) {
   });
 }
 
-export const DELETE = authenticated(async (req, { params }) => {
-  if (!params?.id || typeof params.id !== "string")
-    return error("Invalid file id", 400);
+export const DELETE = async (
+  _req: NextRequest,
+  context: { params: Promise<{ id: string }> },
+) => {
+  const params = await context.params;
+  const session = await auth.api.getSession({
+    headers: await headers(),
+  });
+
+  if (!session) return error("Unauthorized", 401);
 
   const file = await prisma.file.delete({
     where: {
       id: params.id,
-      userId: req.auth.user.id,
+      userId: session.user.id,
     },
     select: {
       folder: true,
@@ -154,7 +170,7 @@ export const DELETE = authenticated(async (req, { params }) => {
   else await deleteFolder(params.id);
 
   return json({ message: "File deleted" });
-});
+};
 
 const updateSchema = z
   .object({
@@ -167,16 +183,23 @@ const updateSchema = z
     public: data.public,
     parent: data.parent,
   }));
-export const PATCH = authenticated(async (req, { params }) => {
-  if (!params?.id || typeof params.id !== "string")
-    return error("Invalid file id", 400);
+export const PATCH = async (
+  req: NextRequest,
+  context: { params: Promise<{ id: string }> },
+) => {
+  const params = await context.params;
+  const session = await auth.api.getSession({
+    headers: await headers(),
+  });
+
+  if (!session) return error("Unauthorized", 401);
 
   try {
     const data = await parseBody(req, updateSchema);
     const oldFile = await prisma.file.findUnique({
       where: {
         id: params.id,
-        userId: req.auth.user.id,
+        userId: session.user.id,
       },
       select: { folder: true, path: true },
     });
@@ -186,7 +209,7 @@ export const PATCH = authenticated(async (req, { params }) => {
     const newFile = await prisma.file.update({
       where: {
         id: params.id,
-        userId: req.auth.user.id,
+        userId: session.user.id,
       },
       data: {
         name: data.name,
@@ -205,7 +228,7 @@ export const PATCH = authenticated(async (req, { params }) => {
               : {
                   connect: {
                     id: data.parent,
-                    userId: req.auth.user.id,
+                    userId: session.user.id,
                   },
                 }
             : undefined,
@@ -244,4 +267,4 @@ export const PATCH = authenticated(async (req, { params }) => {
   } catch (e) {
     return error("Invalid body", 400);
   }
-});
+};
